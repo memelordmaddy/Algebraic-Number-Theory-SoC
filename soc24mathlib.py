@@ -80,5 +80,3 @@ def is_quadratic_residue_prime_power(a,p,e): # returns 0 if a,p^e aren't coprime
             return 1
         else:
             return -1
-        
-print(lcm(9,7,3,13,17))
