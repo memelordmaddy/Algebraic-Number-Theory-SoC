@@ -53,6 +53,8 @@ def crt(a, n): #returns an x that satisfies all simultaneous congruence [op:int,
 def pow(a,m,n): #returns a to the power m modulo n [op:int, ip:(int, int, int)]
     if(m==1):
         return a%n
+    if(m==0):
+        return 1
     temp= pow(a, m//2, n)%n
     if(m%2==0):
         return ((temp)**2)%n
