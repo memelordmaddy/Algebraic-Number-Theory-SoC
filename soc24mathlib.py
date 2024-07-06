@@ -117,8 +117,10 @@ class QuotientPolynomialRing:
     def __init__(self, poly: list[int], pi_gen: list[int]) -> None:
         if not pi_gen:
             raise ValueError("Quotienting polynomial must be non-empty.")
+        '''
         if pi_gen[-1] != 1:
             raise ValueError("Quotienting polynomial must be monic.")
+        '''
         self.pi_generator = pi_gen
         if(len(poly)<len(pi_gen)):
             poly.extend([0] * (len(pi_gen) - 1 - len(poly)))
@@ -128,7 +130,7 @@ class QuotientPolynomialRing:
                 if poly[-1] == 0:
                     poly.pop()
                     continue
-                coeff = poly[-1]
+                coeff = poly[-1]// pi_gen[-1]
                 for i in range(1, len(pi_gen) + 1):
                     poly[-i] -= coeff * pi_gen[-i]
                 poly.pop()
@@ -167,74 +169,23 @@ class QuotientPolynomialRing:
         for i in range (0, len(poly1.element)):
             for j in range (0, len(poly2.element)):
                 op[i+j] += poly1.element[i]*poly2.element[j]
-        return QuotientPolynomialRing(op, poly1.pi_generator)
-    
-    @staticmethod
-    def quotient(poly1, poly2):
-        QuotientPolynomialRing._check_pi_generators(poly1, poly2)
-        quotient = []
-        while poly1.element[-1]==0:
-            poly1.element.pop()
-        while poly2.element[-1]==0:
-            poly2.element.pop()  
-        remainder=poly1.element      
-        while len(remainder) >= len(poly2.element):
-            if remainder[-1] == 0:
-                remainder.pop()
-                continue
-            
-            lead_coef_ratio = remainder[-1] // poly2.element[-1]
-            degree_diff = len(remainder) - len(poly2.element)
-            
-            current_quotient = [0] * degree_diff + [lead_coef_ratio]
-            quotient = current_quotient + quotient
-            coeff=remainder[-1]
-            for i in range(1, len(poly2.element)+1):
-                remainder[-i]=coeff*poly2.element[-i]
-            remainder.pop()  
-        if not quotient:
-            quotient = [0]        
-        return QuotientPolynomialRing(quotient, poly1.pi_generator)       
-    
-    @staticmethod
-    def polynomial_mod(poly1, poly2):
-        while poly1.element[-1]==0:
-            poly1.element.pop()
-        while poly2.element[-1]==0:
-            poly2.element.pop()
-        while len(poly1.element) >= len(poly2.element):
-                if poly1.element[-1] == 0:
-                    poly1.element.pop()
-                    continue
-                coeff = poly1.element[-1]/poly2.element[-1]
-                for i in range(1, len(poly2.element) + 1):
-                    poly1.element[-i] -= coeff * poly2.element[-i]
-                poly1.element.pop()
-        return QuotientPolynomialRing(poly1.element, poly1.pi_generator)
-
+        return QuotientPolynomialRing(op, poly1.pi_generator)          
+        
     @staticmethod
     def GCD(poly1, poly2):
         QuotientPolynomialRing._check_pi_generators(poly1, poly2)
-        if poly2 == QuotientPolynomialRing([0], poly1.pi_generator):
-            return poly1
+        while poly2.element and poly2.element[-1] == 0:
+            poly2.element.pop()
+        while poly1.element and poly1.element[-1] == 0:
+            poly1.element.pop()
+        if not poly2.element:
+            return QuotientPolynomialRing(poly1.element, poly1.pi_generator)
+        if(len(poly1.element)<len(poly2.element)):
+            return QuotientPolynomialRing.GCD(QuotientPolynomialRing(poly2.element, poly2.pi_generator), QuotientPolynomialRing(poly1.element, poly1.pi_generator))
         else:
-            return QuotientPolynomialRing.GCD(poly2, QuotientPolynomialRing.polynomial_mod(poly1, poly2))
+            poly3=QuotientPolynomialRing(poly1.element, poly2.element)
+            return QuotientPolynomialRing.GCD(QuotientPolynomialRing(poly3.element, poly2.pi_generator), poly2)
 
-    @staticmethod
-    def egcd(poly1, poly2):
-        QuotientPolynomialRing._check_pi_generators(poly1, poly2)
-        if poly2.element == [0]*len(poly2.element):
-            return QuotientPolynomialRing(QuotientPolynomialRing([1], poly1.pi_generator),QuotientPolynomialRing([0], poly1.pi_generator), poly1)
-        else:
-            x,y,g= QuotientPolynomialRing.egcd(poly2, QuotientPolynomialRing.polynomial_mod(poly1.element, poly2.element))
-            return y, QuotientPolynomialRing.Sub(x, QuotientPolynomialRing.Mul(y,QuotientPolynomialRing.quotient(poly1, poly2))), g
-
-    @staticmethod
-    def Inv(poly):
-        x, y, g = QuotientPolynomialRing.egcd(poly, poly.pi_generator)
-        if g != QuotientPolynomialRing([1], poly.pi_generator):
-            raise ValueError("Polynomial is not invertible in the ring.")
-        return QuotientPolynomialRing(x, poly.pi_generator)
 
 def factor(n):
     max= int(floor_sqrt(n))
@@ -291,3 +242,113 @@ def is_prime(n):
         else:
             return False
     return True
+
+class QPR_Modulo_P:
+    def __init__(self, poly:list[int], pi_gen: list[int], p:int) -> None:
+        if not pi_gen:
+            raise ValueError("Quotienting polynomial must be non-empty.")
+        if pi_gen[-1] != 1:
+            raise ValueError("Quotienting polynomial must be monic.")
+        for i in pi_gen:
+            if i>=p:
+                raise ValueError("All coefficients of pi-gen must be in Z_p")
+        self.pi_generator = pi_gen
+        self.p = p
+        if(len(poly)<len(pi_gen)):
+            for i in range(0, len(poly)):
+                poly[i]%=p
+                poly[i]= (poly[i]+p)%p
+            poly.extend([0] * (len(pi_gen) - 1 - len(poly)))
+            self.element = poly
+        else:
+            while len(poly) >= len(pi_gen):
+                if poly[-1] == 0:
+                    poly.pop()
+                    continue
+                coeff = poly[-1]
+                for i in range(1, len(pi_gen) + 1):
+                    poly[-i] -= coeff * pi_gen[-i]
+                poly.pop()
+            for i in range(0, len(poly)):
+                poly[i]%=p
+                poly[i]= (poly[i]+p)%p
+            if len(poly) < len(pi_gen) - 1:
+                poly.extend([0] * (len(pi_gen) - 1 - len(poly)))
+            self.element = poly
+
+    def __repr__(self):
+        return f"QPR_Modulo_P({self.element}, {self.pi_generator}, {self.p})"
+    
+    @staticmethod
+    def _check_pi_generators(poly1, poly2):
+        if poly1.pi_generator != poly2.pi_generator or poly1.p != poly2.p:
+            raise ValueError("Polynomials must have the same quotienting polynomial and p.")
+
+    @staticmethod
+    def Mul(poly1, poly2):
+        QPR_Modulo_P._check_pi_generators(poly1, poly2)
+        op=[0]*(len(poly1.element)*2-1)
+        for i in range (0, len(poly1.element)):
+            for j in range (0, len(poly2.element)):
+                op[i+j] += poly1.element[i]*poly2.element[j]
+                op[i+j]= (op[i+j]+poly1.p)%poly1.p
+        return QPR_Modulo_P(op, poly1.pi_generator, poly1.p)
+    
+    @staticmethod
+    def Mod_Exp(poly, m):
+        if(m==0):
+            return QPR_Modulo_P([1], poly.pi_generator, poly.p)
+        if(m==1):
+            return poly
+        temp= QPR_Modulo_P.Mod_Exp(poly, m//2)
+        if(m%2==0):
+            return QPR_Modulo_P.Mul(temp, temp)
+        else:
+            return QPR_Modulo_P.Mul(QPR_Modulo_P.Mul(temp, temp), poly)
+
+def find_smallest_r(n):
+    r = 2
+    len_n = n.bit_length()
+    bound= 4*(len_n**2)
+    while r < n:
+        if pair_gcd(n, r) > 1:
+            return r
+        order = 1
+        k=pow(n, order, r)
+        while k != 1:
+            order += 1
+            k*=n
+            k%=r
+            if order > bound:
+                return r
+        r += 1
+    return n
+
+def aks_test(n):
+    if(is_perfect_power(n)):
+        return False
+    r=find_smallest_r(n)
+    if(r==n):
+        return True
+    if pair_gcd(n, r) > 1:
+        return False
+    len_n = n.bit_length()
+    pi_gen=[0]*(r+1)
+    pi_gen[0]=-1
+    pi_gen[r]=1
+    for j in range(1, 2*len_n*int(floor_sqrt(r))+2):
+        print(j)
+        rhs_poly=[0]*(n%r+1)
+        rhs_poly[0]=j
+        rhs_poly[n%r]=1
+        rhs=QPR_Modulo_P(rhs_poly, pi_gen, n)
+        #print(rhs)
+        lhs_poly=[0]*(2)
+        lhs_poly[0]=j
+        lhs_poly[1]=1
+        lhs=QPR_Modulo_P(lhs_poly, pi_gen, n)
+        #print(lhs)
+        if QPR_Modulo_P.Mod_Exp(lhs, n)!=rhs:
+            return False
+    return True
+
