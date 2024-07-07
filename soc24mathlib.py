@@ -114,13 +114,11 @@ def is_perfect_power(n): # returns true if n is a perfect power, false otherwise
     return False
 
 class QuotientPolynomialRing:
-    def __init__(self, poly: list[int], pi_gen: list[int]) -> None:
+    def __init__(self, poly, pi_gen) -> None:
         if not pi_gen:
             raise ValueError("Quotienting polynomial must be non-empty.")
-        '''
         if pi_gen[-1] != 1:
             raise ValueError("Quotienting polynomial must be monic.")
-        '''
         self.pi_generator = pi_gen
         if(len(poly)<len(pi_gen)):
             poly.extend([0] * (len(pi_gen) - 1 - len(poly)))
@@ -173,40 +171,133 @@ class QuotientPolynomialRing:
         
     @staticmethod
     def GCD(poly1, poly2):
+        #print(poly1, poly2)
+        epsilon=1e-4
         QuotientPolynomialRing._check_pi_generators(poly1, poly2)
-        while poly2.element and poly2.element[-1] == 0:
-            poly2.element.pop()
-        while poly1.element and poly1.element[-1] == 0:
+        flag=True
+        for i in range (0, len(poly2.element)):
+            if(poly2.element[i]>epsilon or poly2.element[i]<-epsilon):
+                flag=False
+                break
+        if(flag):
+            while poly1.element and poly1.element[-1]==0:
+                poly1.element.pop()
+            for i in range(0,len(poly1.element)):
+                poly1.element[i]=int(poly1.element[i]/poly1.element[-1])
+            return QuotientPolynomialRing(poly1.element, poly1.pi_generator)          
+        while poly1.element and poly1.element[-1]==0:
             poly1.element.pop()
-        if not poly2.element:
-            return QuotientPolynomialRing(poly1.element, poly1.pi_generator)
-        if(len(poly1.element)<len(poly2.element)):
-            return QuotientPolynomialRing.GCD(QuotientPolynomialRing(poly2.element, poly2.pi_generator), QuotientPolynomialRing(poly1.element, poly1.pi_generator))
+        while poly2.element and poly2.element[-1]==0:
+            poly2.element.pop()
+        if(len(poly1.element)>=len(poly2.element)):
+            while len(poly1.element) >= len(poly2.element):
+                if poly1.element[-1] == 0:
+                    poly1.element.pop()
+                    continue
+                coeff = poly1.element[-1]/poly2.element[-1]
+                for i in range(1, len(poly2.element) + 1):
+                    poly1.element[-i] -= coeff * poly2.element[-i]
+                poly1.element.pop()
+            poly3= QuotientPolynomialRing(poly1.element, poly1.pi_generator)
+            poly4= QuotientPolynomialRing(poly2.element, poly1.pi_generator)
+            return QuotientPolynomialRing.GCD(poly4, poly3)
         else:
-            poly3=QuotientPolynomialRing(poly1.element, poly2.element)
-            return QuotientPolynomialRing.GCD(QuotientPolynomialRing(poly3.element, poly2.pi_generator), poly2)
+            poly3= QuotientPolynomialRing(poly1.element, poly1.pi_generator)
+            poly4= QuotientPolynomialRing(poly2.element, poly1.pi_generator)
+            return  QuotientPolynomialRing.GCD(poly4,poly1)
+        
+    @staticmethod
+    def EGCD(poly1, poly2):
+        epsilon=1e-4
+        QuotientPolynomialRing._check_pi_generators(poly1, poly2)
+        flag=True
+        for i in range (0, len(poly2.element)):
+            if(poly2.element[i]>epsilon or poly2.element[i]<-epsilon):
+                flag=False
+                break
+        if(flag):
+            while poly1.element and poly1.element[-1]==0:
+                poly1.element.pop()
+            for i in range(0,len(poly1.element)):
+                poly1.element[i]=int(poly1.element[i]/poly1.element[-1])
+            return QuotientPolynomialRing([1],poly1.pi_generator),QuotientPolynomialRing([0], poly1.pi_generator),QuotientPolynomialRing(poly1.element, poly1.pi_generator)
+        while poly1.element and poly1.element[-1]==0:
+            poly1.element.pop()
+        while poly2.element and poly2.element[-1]==0:
+            poly2.element.pop()
 
-
+        quotient = [0] * (len(poly1.element) - len(poly2.element) + 1)
+        remainder = poly1.element[:]
+    
+    # Get the degree of the divisor
+        divisor_degree = len(poly2.element) - 1
+        divisor_lead_coeff = poly2.element[-1]
+    
+    # Perform the division algorithm
+        for i in range(len(poly1.element) - len(poly2.element), -1, -1):
+            quotient[i] = remainder[i + divisor_degree] // divisor_lead_coeff
+            for j in range(divisor_degree + 1):
+                remainder[i + j] -= quotient[i] * poly2.element[j]
+        
+        poly3= QuotientPolynomialRing(quotient, poly1.pi_generator)
+        poly4= QuotientPolynomialRing(remainder, poly1.pi_generator)
+        x,y,gcd = QuotientPolynomialRing.EGCD(poly2, poly4)
+        return y, QuotientPolynomialRing.Sub(x, QuotientPolynomialRing.Mul(y, poly3)), gcd
+    
+    @staticmethod
+    def Inv(poly):
+        new_pigen=poly.pi_generator.copy()
+        new_pigen.append(1)
+        poly4= QuotientPolynomialRing(poly.pi_generator, new_pigen)
+        #print(poly4)
+        poly5= QuotientPolynomialRing(poly.element, new_pigen)
+        poly6=QuotientPolynomialRing.GCD(poly4, poly5)
+        #print(poly6.element)
+        while poly6.element and poly6.element[-1]==0:
+            poly6.element.pop()
+        if(poly6.element!=[1]):
+            #print(QuotientPolynomialRing.GCD(poly4, poly5))
+            raise Exception("Not invertible")
+        else:
+            x,y,gcd = QuotientPolynomialRing.EGCD(poly4, poly5)
+            #print(poly.pi_generator)
+            #print(y.element)
+            new_pigen.pop()
+            #print(new_pigen)
+            return QuotientPolynomialRing(y.element, new_pigen)
+            
+         
 def factor(n):
     max= int(floor_sqrt(n))
-    is_prime=[True]*(max+1)
-    is_prime[0]=False
-    is_prime[1]=False
+    if(n==1):
+        return []
+    prime=[True]*(max+1)
+    prime[0]=False
+    prime[1]=False
     op=[]
     if(n==1):
         return op
+    if(is_prime(n)):
+        op.append((n, 1))
+        return op
     for i in range(2, max+1):
-        if(is_prime[i]):
+        if(prime[i]):
             if(n%i==0):
+                if(is_prime(n//i)):
+                    count_2=0
+                    k=n//i
+                    while(n%k==0):
+                        n//=k
+                        count_2+=1
+                    op.append((k, count_2))
                 count=0
                 while(n%i==0):
                     n//=i
                     count+=1
                 op.append((i, count))
             for j in range(i*i, max+1, i):
-                is_prime[j]=False
-    if(len(op)==0):
-        op.append((n, 1))
+                prime[j]=False
+    op.sort()
     return op
     
 def euler_phi(n):
@@ -243,6 +334,18 @@ def is_prime(n):
             return False
     return True
 
+def gen_prime(m):
+    while True:
+        p=random.randint(2,m)
+        if(is_prime(p)):
+            return p
+        
+def gen_k_bit_prime(k):
+    while True:
+        p=random.randint(2**(k-1),2**k-1)
+        if(is_prime(p)):
+            return p
+        
 class QPR_Modulo_P:
     def __init__(self, poly:list[int], pi_gen: list[int], p:int) -> None:
         if not pi_gen:
@@ -305,7 +408,8 @@ class QPR_Modulo_P:
             return QPR_Modulo_P.Mul(temp, temp)
         else:
             return QPR_Modulo_P.Mul(QPR_Modulo_P.Mul(temp, temp), poly)
-
+    
+    
 def find_smallest_r(n):
     r = 2
     len_n = n.bit_length()
@@ -337,7 +441,7 @@ def aks_test(n):
     pi_gen[0]=-1
     pi_gen[r]=1
     for j in range(1, 2*len_n*int(floor_sqrt(r))+2):
-        print(j)
+        #print(j)
         rhs_poly=[0]*(n%r+1)
         rhs_poly[0]=j
         rhs_poly[n%r]=1
@@ -352,3 +456,24 @@ def aks_test(n):
             return False
     return True
 
+
+'''
+def get_generator(p):
+    if(p==2):
+        return 1
+    factors= factor(p-1)
+    print(factors)
+    gamma_i=[]
+    for i in range (0, len(factors)):
+        beta =1
+        while beta==1:
+            alpha=random.randint(2, p-1)
+            beta= alpha**(p-1//factors[i][0])
+        gamma_i.append(alpha**(p-1//(factors[i][0]**factors[i][1])))
+    gamma=1
+    for i in range(0, len(gamma_i)):
+        gamma*=gamma_i[i]
+    return gamma
+        
+print(get_generator(11))
+'''
