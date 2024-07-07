@@ -361,7 +361,6 @@ class QPR_Modulo_P:
             for i in range(0, len(poly)):
                 poly[i]%=p
                 poly[i]= (poly[i]+p)%p
-            poly.extend([0] * (len(pi_gen) - 1 - len(poly)))
             self.element = poly
         else:
             while len(poly) >= len(pi_gen):
@@ -375,8 +374,6 @@ class QPR_Modulo_P:
             for i in range(0, len(poly)):
                 poly[i]%=p
                 poly[i]= (poly[i]+p)%p
-            if len(poly) < len(pi_gen) - 1:
-                poly.extend([0] * (len(pi_gen) - 1 - len(poly)))
             self.element = poly
 
     def __repr__(self):
@@ -390,7 +387,7 @@ class QPR_Modulo_P:
     @staticmethod
     def Mul(poly1, poly2):
         QPR_Modulo_P._check_pi_generators(poly1, poly2)
-        op=[0]*(len(poly1.element)*2-1)
+        op=[0]*(len(poly1.element) + len(poly2.element)-1)
         for i in range (0, len(poly1.element)):
             for j in range (0, len(poly2.element)):
                 op[i+j] += poly1.element[i]*poly2.element[j]
@@ -399,15 +396,26 @@ class QPR_Modulo_P:
     
     @staticmethod
     def Mod_Exp(poly, m):
+        #print(m)
         if(m==0):
             return QPR_Modulo_P([1], poly.pi_generator, poly.p)
         if(m==1):
             return poly
         temp= QPR_Modulo_P.Mod_Exp(poly, m//2)
+        while temp.element[-1]==0:
+            temp.element.pop()
+
+        #print(temp)
         if(m%2==0):
-            return QPR_Modulo_P.Mul(temp, temp)
+            op= QPR_Modulo_P.Mul(temp, temp)
+            while op.element[-1]==0:
+                op.element.pop()
+            return op
         else:
-            return QPR_Modulo_P.Mul(QPR_Modulo_P.Mul(temp, temp), poly)
+            op= QPR_Modulo_P.Mul(QPR_Modulo_P.Mul(temp, temp), poly)
+            while op.element[-1]==0:
+                op.element.pop()
+            return op
     
     
 def find_smallest_r(n):
@@ -441,7 +449,7 @@ def aks_test(n):
     pi_gen[0]=-1
     pi_gen[r]=1
     for j in range(1, 2*len_n*int(floor_sqrt(r))+2):
-        #print(j)
+        print(j)
         rhs_poly=[0]*(n%r+1)
         rhs_poly[0]=j
         rhs_poly[n%r]=1
@@ -452,7 +460,10 @@ def aks_test(n):
         lhs_poly[1]=1
         lhs=QPR_Modulo_P(lhs_poly, pi_gen, n)
         #print(lhs)
-        if QPR_Modulo_P.Mod_Exp(lhs, n)!=rhs:
+        l=QPR_Modulo_P.Mod_Exp(lhs, n)
+        if l.element!=rhs.element:
+            print(l.element, rhs.element)
+
             return False
     return True
 
