@@ -57,7 +57,7 @@ assert p_inv.element == [1, 0, 0, 0] and p_inv.pi_generator == [7, 0, 0,  3, 1]
 assert soc24mathlib.aks_test(7) == True
 assert soc24mathlib.aks_test(2) == True
 assert soc24mathlib.aks_test(15) == False
-#assert soc24mathlib.aks_test(1087) == True
+assert soc24mathlib.aks_test(1087) == True
 #assert soc24mathlib.aks_test(3698849471) == True
 assert soc24mathlib.aks_test(79275795119) == False
 

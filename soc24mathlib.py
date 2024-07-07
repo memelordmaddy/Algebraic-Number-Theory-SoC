@@ -358,9 +358,6 @@ class QPR_Modulo_P:
         self.pi_generator = pi_gen
         self.p = p
         if(len(poly)<len(pi_gen)):
-            for i in range(0, len(poly)):
-                poly[i]%=p
-                poly[i]= (poly[i]+p)%p
             self.element = poly
         else:
             while len(poly) >= len(pi_gen):
@@ -389,7 +386,11 @@ class QPR_Modulo_P:
         QPR_Modulo_P._check_pi_generators(poly1, poly2)
         op=[0]*(len(poly1.element) + len(poly2.element)-1)
         for i in range (0, len(poly1.element)):
+            if(poly1.element[i]==0):
+                continue
             for j in range (0, len(poly2.element)):
+                if(poly2.element[j]==0):
+                    continue
                 op[i+j] += poly1.element[i]*poly2.element[j]
                 op[i+j]= (op[i+j]+poly1.p)%poly1.p
         return QPR_Modulo_P(op, poly1.pi_generator, poly1.p)
@@ -449,7 +450,7 @@ def aks_test(n):
     pi_gen[0]=-1
     pi_gen[r]=1
     for j in range(1, 2*len_n*int(floor_sqrt(r))+2):
-        print(j)
+        #print(j)
         rhs_poly=[0]*(n%r+1)
         rhs_poly[0]=j
         rhs_poly[n%r]=1
