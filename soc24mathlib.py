@@ -56,6 +56,8 @@ def pow(a,m,n): #returns a to the power m modulo n [op:int, ip:(int, int, int)]
         return a%n
     if(m==0):
         return 1
+    if(m<0):
+        return mod_inv(pow(a,-m,n),n)
     temp= pow(a, m//2, n)%n
     if(m%2==0):
         return ((temp)**2)%n
@@ -418,7 +420,6 @@ class QPR_Modulo_P:
                 op.element.pop()
             return op
     
-    
 def find_smallest_r(n):
     r = 2
     len_n = n.bit_length()
@@ -450,7 +451,7 @@ def aks_test(n):
     pi_gen[0]=-1
     pi_gen[r]=1
     for j in range(1, 2*len_n*int(floor_sqrt(r))+2):
-        #print(j)
+        print(j)
         rhs_poly=[0]*(n%r+1)
         rhs_poly[0]=j
         rhs_poly[n%r]=1
@@ -463,29 +464,159 @@ def aks_test(n):
         #print(lhs)
         l=QPR_Modulo_P.Mod_Exp(lhs, n)
         if l.element!=rhs.element:
-            print(l.element, rhs.element)
+            #print(l.element, rhs.element)
 
             return False
     return True
 
-
-'''
-def get_generator(p):
+def legenedre_symbol(a, p):
     if(p==2):
-        return 1
-    factors= factor(p-1)
-    print(factors)
-    gamma_i=[]
-    for i in range (0, len(factors)):
-        beta =1
-        while beta==1:
-            alpha=random.randint(2, p-1)
-            beta= alpha**(p-1//factors[i][0])
-        gamma_i.append(alpha**(p-1//(factors[i][0]**factors[i][1])))
+        raise ValueError("p should be an odd prime")
+    if(a==-1):
+        if(p%4==1):
+            return 1
+        else:
+            return -1
+    if(a<0):
+        return legenedre_symbol(-a, p)*legenedre_symbol(-1, p)
+    a= a%p
+    if(a==2):
+        if(((p**2-1)//8) %2==0):
+            return 1
+        else:
+            return -1
+    elif(a==0):
+        return 0
+    else:
+        if( pow(a, (p-1)//2, p)==1):
+            return 1
+        else:
+            return -1
+    
+def jacobi_symbol(a,n):
+    sigma=1
+    while True:
+        a=a%n
+        if(a==0):
+            if(n==1):
+                return sigma
+            else:
+                return 0
+        a_bar=a
+        h=0
+        while a_bar%2==0:
+            a_bar= a_bar//2
+            h+=1
+        if(h%2==1 and (n%8!=1 and n%8!=7)):
+            sigma*=-1
+        if(a_bar%4 !=1 and n%4!=1):
+            sigma*=-1
+        a=n
+        n=a_bar
+
+
+"""
+def modular_sqrt_prime(x,p):
+    x=x%p
+    if(legenedre_symbol(x,p)!=1):
+        raise ValueError("No solution")
+    if(p%4==3):
+        return pow(x, (p+1)//4, p)   
+"""
+
+def get_generator(p):
     gamma=1
-    for i in range(0, len(gamma_i)):
-        gamma*=gamma_i[i]
+    factors = factor(p-1)
+    for i in range (0, len(factors)):
+        beta=1
+        while beta==1:
+            alpha= random.randint(2, p-1)
+            beta= pow(alpha, (p-1)//factors[i][0], p)
+        gamma= (gamma*pow(alpha,(p-1)/(factors[i][0]**factors[i][1]),p))%p
     return gamma
-        
-print(get_generator(11))
-'''
+
+def order(n,p):
+    if(n==1):
+        return 1
+    for i in range(2,p):
+        if((p-1)%i==0):
+            if(pow(n,i,p)==1):
+                return i
+        i+=1
+def is_smooth(m,y):
+    if(m==1):
+        return True
+    for i in range(2, m+1):
+        if(m%i==0):
+            if(i>y):
+                return False
+            return is_smooth(m//i, y)
+    return True
+
+def dlog_brute_force(x,g,p):
+    o= order(g,p)
+    if(x==1):
+        return o
+    a=g
+    for i in range (1,o+1):
+        if(g==x):
+            return i
+        g= (g*a)%p
+    raise ValueError("Discrete Logarithm DNE")
+
+def dlog_baby_giant(x, g, p):
+    q = order(g, p)
+    m = int(floor_sqrt(q)) + 1
+    
+    baby_steps = {}
+    for i in range(m):
+        baby_steps[pow(g, i, p)] = i
+    
+    g_inv_m = pow(g, m, p)
+    g_inv_m= mod_inv(g_inv_m,p)
+    
+    current = x
+    for j in range(m):
+        if current in baby_steps:
+            return j * m + baby_steps[current]
+        current = (current * g_inv_m) % p
+    
+    raise ValueError("Discrete Logarithm DNE")
+
+def discrete_log(x,g,p): # OPTIMIZE USING RDL
+    return dlog_baby_giant(x,g,p)
+
+def modular_sqrt_prime(x,p):
+    if(legenedre_symbol(x,p)==-1):
+        raise ValueError("modular square root DNE")
+    if(p%4==3):
+        return pow(x,(p+1)/4,p)
+    gamma= random.randint(1,p-1)
+    while legenedre_symbol(gamma,p)==1:
+        gamma=random.randint(1,p-1)
+    h=0
+    m=p-1
+    while m%2==0:
+        h+=1
+        m/=2
+    gamma_2= pow(gamma,m,p)
+    alpha_2= pow(x,m,p)
+    k=discrete_log(alpha_2, gamma_2,p)
+    beta=pow(gamma_2,k/2,p)
+    beta *= pow(x,-(m//2),p)
+    beta%=p
+    return beta
+
+def modular_sqrt_prime_power(x,p,e):
+    pass
+
+def modular_sqrt(x,z):
+    pass
+
+def probabilistic_dlog(x,g,p):
+    pass
+
+def probabilistic_factor(n):
+    pass
+
+
