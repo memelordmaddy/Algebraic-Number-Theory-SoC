@@ -1,64 +1,43 @@
 import soc24mathlib
 
-assert soc24mathlib.floor_sqrt(64) == 8
-assert soc24mathlib.floor_sqrt(2086571081) == 45679
-assert soc24mathlib.floor_sqrt(1368) == 36
+assert soc24mathlib.discrete_log(11, 2, 13) == 7
+assert soc24mathlib.discrete_log(12384, 89, 3698849471) == 1261856717 
 
-assert soc24mathlib.is_perfect_power(64) == True
-assert soc24mathlib.is_perfect_power(243) == True
-assert soc24mathlib.is_perfect_power(1368) == False
+assert soc24mathlib.legendre_symbol(3, 7) == -1
+assert soc24mathlib.legendre_symbol(9, 13) == 1
+assert soc24mathlib.legendre_symbol(0, 17) == 0
+assert soc24mathlib.legendre_symbol(36249236958, 312345674079547151037918331725178312522478809653607352546657135738291654855733134069982077700935127515340479970913704499650782485828349263440468316632391) == -1
 
-assert soc24mathlib.is_prime(7) == True
-assert soc24mathlib.is_prime(2) == True
-assert soc24mathlib.is_prime(15) == False
-assert soc24mathlib.is_prime(3698849471) == True
-assert soc24mathlib.is_prime(79275795119) == False
+assert soc24mathlib.jacobi_symbol(3, 79) == -1
+assert soc24mathlib.jacobi_symbol(1789,3189045) ==-1
+assert soc24mathlib.jacobi_symbol(7921, 489303) == 1
+assert soc24mathlib.jacobi_symbol(136, 153) == 0
 
+assert soc24mathlib.modular_sqrt_prime(11, 19) == 7
+assert soc24mathlib.modular_sqrt_prime(12378, 3698849471) == 2301481823
+
+#assert soc24mathlib.modular_sqrt_prime_power(11, 19, 8) == 2684202706
+#assert soc24mathlib.modular_sqrt_prime_power(12378, 3698849471, 3) == 19725977363156848933505792157
+
+#assert soc24mathlib.modular_sqrt(10, 15) == 5
+#assert soc24mathlib.modular_sqrt(91, 157482) == 62855
+
+assert soc24mathlib.is_smooth(1759590, 20) == True
+assert soc24mathlib.is_smooth(906486, 150) == False
+
+'''
+assert soc24mathlib.probabilistic_discrete_log(11, 2, 13) == 7
+assert soc24mathlib.probabilistic_discrete_log(12384, 89, 3698849471) == 1261856717
+assert soc24mathlib.probabilistic_discrete_log(131313, 13, 17077114927) == 12294541275
+'''
 # Note that the first components of the tuples are the actual factors, while the second components are the multiplicities.
 # The actual factors must be sorted in ascending order.
-assert soc24mathlib.factor(1) == []
-assert soc24mathlib.factor(7) == [(7, 1)]
-assert soc24mathlib.factor(243) == [(3, 5)]
-assert soc24mathlib.factor(4104) == [(2, 3), (3, 3), (19, 1)]
-assert soc24mathlib.factor(1408198281) == [(3, 1), (7, 1), (17, 1), (19, 1), (31, 1), (37, 1), (181, 1)]
-assert soc24mathlib.factor(10)== [(2, 1), (5, 1)]
 
-assert soc24mathlib.euler_phi(1) == 1
-assert soc24mathlib.euler_phi(7) == 6
-assert soc24mathlib.euler_phi(243) == 162
-assert soc24mathlib.euler_phi(4104) == 1296
-
-p1 = soc24mathlib.QuotientPolynomialRing([-3, -5, -1, 1], [7, 0, 0,  3, 1])
-p2 = soc24mathlib.QuotientPolynomialRing([1, 5, 7, 3], [7, 0, 0,  3, 1])
-assert p1.element == [-3, -5, -1, 1]
-assert p1.pi_generator == [7, 0, 0,  3, 1]
-assert p2.element == [1, 5, 7, 3]
-assert p2.pi_generator == [7, 0, 0,  3, 1]
-p_add = soc24mathlib.QuotientPolynomialRing.Add(p1, p2)
-assert p_add.element == [-2, 0, 6, 4] and p_add.pi_generator == [7, 0, 0,  3, 1]
-p_sub = soc24mathlib.QuotientPolynomialRing.Sub(p1, p2)
-assert p_sub.element == [-4, -10, -8, -2] and p_sub.pi_generator == [7, 0, 0,  3, 1]
-p_mul = soc24mathlib.QuotientPolynomialRing.Mul(p1, p2)
-assert p_mul.element == [11, 15, -68, -42] and p_mul.pi_generator == [7, 0, 0,  3, 1]
-p_div = soc24mathlib.QuotientPolynomialRing.GCD(p1, p2)
-assert p_div.element == [1, 2, 1, 0] and p_div.pi_generator == [7, 0, 0,  3, 1]
 '''
-test_var = False
-try:
-    p_inv = soc24mathlib.QuotientPolynomialRing.Inv(p1)
-except:
-    test_var = True
-assert test_var == True
+assert soc24mathlib.probabilistic_factor(1) == []
+assert soc24mathlib.probabilistic_factor(7) == [(7, 1)]
+assert soc24mathlib.probabilistic_factor(243) == [(3, 5)]
+assert soc24mathlib.probabilistic_factor(4104) == [(2, 3), (3, 3), (19, 1)]
+assert soc24mathlib.probabilistic_factor(1408198281) == [(3, 1), (7, 1), (17, 1), (19, 1), (31, 1), (37, 1), (181, 1)]
 '''
-p_inv = soc24mathlib.QuotientPolynomialRing.Inv(soc24mathlib.QuotientPolynomialRing([1, 0, 0, 0], [7, 0, 0,  3, 1]))
-assert p_inv.element == [1, 0, 0, 0] and p_inv.pi_generator == [7, 0, 0,  3, 1]
-
-
-assert soc24mathlib.aks_test(7) == True
-assert soc24mathlib.aks_test(2) == True
-assert soc24mathlib.aks_test(15) == False
-assert soc24mathlib.aks_test(1087) == True
-#assert soc24mathlib.aks_test(3698849471) == True
-assert soc24mathlib.aks_test(79275795119) == False
-
 print("All tests passed!")

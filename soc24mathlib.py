@@ -115,6 +115,35 @@ def is_perfect_power(n): # returns true if n is a perfect power, false otherwise
             return True
     return False
 
+def natural_log(n):
+    e=2.718281828459045
+    e_pow=e
+    k=1
+    while e_pow*e<=n:
+        e_pow*=e
+        k+=1
+    n/=e_pow
+    n-=1
+    natural_log=0
+    n_cp=n
+    for i in range(1,100):
+        if i%2==0:
+            natural_log-=n/i
+        else:
+            natural_log+=n/i
+        n*=n_cp
+    return natural_log+k
+
+def exp(n):
+    f=1
+    op=1
+    n_cp=n
+    for i in range(1,100):
+        f*=i
+        op += n/f
+        n*=n_cp
+    return op
+
 class QuotientPolynomialRing:
     def __init__(self, poly, pi_gen) -> None:
         if not pi_gen:
@@ -469,7 +498,7 @@ def aks_test(n):
             return False
     return True
 
-def legenedre_symbol(a, p):
+def legendre_symbol(a, p):
     if(p==2):
         raise ValueError("p should be an odd prime")
     if(a==-1):
@@ -478,7 +507,7 @@ def legenedre_symbol(a, p):
         else:
             return -1
     if(a<0):
-        return legenedre_symbol(-a, p)*legenedre_symbol(-1, p)
+        return legendre_symbol(-a, p)*legendre_symbol(-1, p)
     a= a%p
     if(a==2):
         if(((p**2-1)//8) %2==0):
@@ -515,14 +544,6 @@ def jacobi_symbol(a,n):
         n=a_bar
 
 
-"""
-def modular_sqrt_prime(x,p):
-    x=x%p
-    if(legenedre_symbol(x,p)!=1):
-        raise ValueError("No solution")
-    if(p%4==3):
-        return pow(x, (p+1)//4, p)   
-"""
 
 def get_generator(p):
     gamma=1
@@ -535,14 +556,17 @@ def get_generator(p):
         gamma= (gamma*pow(alpha,(p-1)/(factors[i][0]**factors[i][1]),p))%p
     return gamma
 
-def order(n,p):
-    if(n==1):
-        return 1
-    for i in range(2,p):
-        if((p-1)%i==0):
-            if(pow(n,i,p)==1):
+def order(a,n):
+    l=[]
+    for i in range(1,int(floor_sqrt(n-1))):
+        if((n-1)%i==0):
+            if(pow(a,i,n)==1):
                 return i
-        i+=1
+            l.append((n-1)//i)
+    for i in l:
+        if(pow(a,i,n)==1):
+            return i
+        
 def is_smooth(m,y):
     if(m==1):
         return True
@@ -587,12 +611,12 @@ def discrete_log(x,g,p): # OPTIMIZE USING RDL
     return dlog_baby_giant(x,g,p)
 
 def modular_sqrt_prime(x,p):
-    if(legenedre_symbol(x,p)==-1):
+    if(legendre_symbol(x,p)==-1):
         raise ValueError("modular square root DNE")
     if(p%4==3):
         return pow(x,(p+1)/4,p)
     gamma= random.randint(1,p-1)
-    while legenedre_symbol(gamma,p)==1:
+    while legendre_symbol(gamma,p)==1:
         gamma=random.randint(1,p-1)
     h=0
     m=p-1
@@ -607,14 +631,82 @@ def modular_sqrt_prime(x,p):
     beta%=p
     return beta
 
-def modular_sqrt_prime_power(x,p,e):
-    pass
+def solve_linearcongruence(a,b,n):
+    d=pair_gcd(a,n)
+    if(b%d!=0):
+        raise ValueError("No solution")
+    a/=d
+    b/=d
+    n/=d
+    x=mod_inv(a,n)
+    x*=b
+    x%=n
+    return x
+
+def modular_sqrt_prime_power(x,p,e): #fix this
+    #print(e)
+    if(legendre_symbol(x,p)!=1):
+        raise ValueError("modular square root DNE")
+    f=1
+    b=modular_sqrt_prime(x,p)
+    while f<e:
+        #print(f)
+        
+        h=solve_linearcongruence((2*b*(p**f))%p**(f+1),(x-b**2)%(p**(f+1)),p**(f+1))
+        h%=(p**(f+1))
+        b= b+h*(p**f)
+        b%=p**(f+1)
+        f+=1
+    return int(b)        
 
 def modular_sqrt(x,z):
     pass
 
-def probabilistic_dlog(x,g,p):
-    pass
+def probabilistic_discrete_log(x,g,p):
+    def find_y(p):
+        k=natural_log(p)
+        ex= k * natural_log(k)/2
+        return int(exp(ex**(0.5)))
+    def find_k(y, primes):
+        k=0
+        for i in range(2,y+1):
+            if(is_prime(i)):
+                primes.append(i)
+                k+=1
+        return k, primes
+    def find_e(m, primes):
+        exps=[]
+        for i in primes:
+            e=0
+            while m%i==0:
+                m//=i
+                e+=1
+            exps.append(e)
+        return exps
+    y= find_y(p)
+    q= order(g,p)
+    v=[]
+    r_list=[]
+    s_list=[]
+    k,primes=find_k(y)
+    for i in range (0, k+1):
+        flag= True
+        while flag:
+            r= random.randint(2,q-1)
+            s= random.randint(2,q-1)
+            beta=(pow(g,r,p)*pow(x,s,p))%p
+            delta= random.randint(1, p-1)
+            delta= pow(delta, q, p)
+            m=(beta*delta)%p
+            flag = not(is_smooth(m,y))
+        v.append(find_e(m, primes))
+        r_list.append(r)
+        s_list.append(s)
+
+        
+        
+
+
 
 def probabilistic_factor(n):
     pass
