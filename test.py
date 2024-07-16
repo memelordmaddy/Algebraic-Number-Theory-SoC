@@ -1,7 +1,10 @@
 import soc24mathlib
 
+import time 
+
 assert soc24mathlib.discrete_log(11, 2, 13) == 7
 assert soc24mathlib.discrete_log(12384, 89, 3698849471) == 1261856717 
+
 
 assert soc24mathlib.legendre_symbol(3, 7) == -1
 assert soc24mathlib.legendre_symbol(9, 13) == 1
@@ -13,23 +16,26 @@ assert soc24mathlib.jacobi_symbol(1789,3189045) ==-1
 assert soc24mathlib.jacobi_symbol(7921, 489303) == 1
 assert soc24mathlib.jacobi_symbol(136, 153) == 0
 
+
 assert soc24mathlib.modular_sqrt_prime(11, 19) == 7
-assert soc24mathlib.modular_sqrt_prime(12378, 3698849471) == 2301481823
+assert soc24mathlib.modular_sqrt_prime(12378, 3698849471) == 1397367648
 
-#assert soc24mathlib.modular_sqrt_prime_power(11, 19, 8) == 2684202706
-#assert soc24mathlib.modular_sqrt_prime_power(12378, 3698849471, 3) == 19725977363156848933505792157
 
-#assert soc24mathlib.modular_sqrt(10, 15) == 5
-#assert soc24mathlib.modular_sqrt(91, 157482) == 62855
+assert soc24mathlib.modular_sqrt_prime_power(11, 19, 8) == 2684202706
+assert soc24mathlib.modular_sqrt_prime_power(12378, 3698849471, 3) == 19725977363156848933505792157
+
+assert soc24mathlib.modular_sqrt(10, 15) == 5
+assert soc24mathlib.modular_sqrt(91, 157482) == 62855
+
 
 assert soc24mathlib.is_smooth(1759590, 20) == True
 assert soc24mathlib.is_smooth(906486, 150) == False
 
-'''
-assert soc24mathlib.probabilistic_discrete_log(11, 2, 13) == 7
-assert soc24mathlib.probabilistic_discrete_log(12384, 89, 3698849471) == 1261856717
-assert soc24mathlib.probabilistic_discrete_log(131313, 13, 17077114927) == 12294541275
-'''
+
+#assert soc24mathlib.probabilistic_discrete_log(11, 2, 13) == 7
+#assert soc24mathlib.probabilistic_discrete_log(12384, 89, 3698849471) == 1261856717
+#assert soc24mathlib.probabilistic_discrete_log(131313, 13, 17077114927) == 12294541275
+
 # Note that the first components of the tuples are the actual factors, while the second components are the multiplicities.
 # The actual factors must be sorted in ascending order.
 

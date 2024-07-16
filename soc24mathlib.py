@@ -611,10 +611,19 @@ def discrete_log(x,g,p): # OPTIMIZE USING RDL
     return dlog_baby_giant(x,g,p)
 
 def modular_sqrt_prime(x,p):
+    x=x%p
+    if x==0:
+        return 0
+    if(p==2):
+        return 1
     if(legendre_symbol(x,p)==-1):
         raise ValueError("modular square root DNE")
     if(p%4==3):
-        return pow(x,(p+1)/4,p)
+        op= pow(x,(p+1)/4,p)
+        if op<p-op:
+            return op
+        else:
+            return p-op
     gamma= random.randint(1,p-1)
     while legendre_symbol(gamma,p)==1:
         gamma=random.randint(1,p-1)
@@ -629,46 +638,88 @@ def modular_sqrt_prime(x,p):
     beta=pow(gamma_2,k/2,p)
     beta *= pow(x,-(m//2),p)
     beta%=p
-    return beta
+    if beta<p-beta:
+        return beta
+    else:
+        return p-beta
 
-def solve_linearcongruence(a,b,n):
-    d=pair_gcd(a,n)
-    if(b%d!=0):
-        raise ValueError("No solution")
-    a/=d
-    b/=d
-    n/=d
-    x=mod_inv(a,n)
-    x*=b
-    x%=n
-    return x
 
-def modular_sqrt_prime_power(x,p,e): #fix this
-    #print(e)
-    if(legendre_symbol(x,p)!=1):
+def modular_sqrt_prime_power(a, p, k):    
+    def hensel_lift(a, p, k, b):
+        x = b
+        for i in range(1, k):
+            p_i = p**i
+            x = (x + (a - x*x) * pow(2*x, -1, p_i)) % (p_i * p)
+        return x
+    b = modular_sqrt_prime(a, p)
+    if b is None:
         raise ValueError("modular square root DNE")
-    f=1
-    b=modular_sqrt_prime(x,p)
-    while f<e:
-        #print(f)
-        
-        h=solve_linearcongruence((2*b*(p**f))%p**(f+1),(x-b**2)%(p**(f+1)),p**(f+1))
-        h%=(p**(f+1))
-        b= b+h*(p**f)
-        b%=p**(f+1)
-        f+=1
-    return int(b)        
+    op= hensel_lift(a, p, k, b)
+    if op<p**k-op:
+        return op
+    else:
+        return p**k-op    
 
 def modular_sqrt(x,z):
-    pass
+    factors= factor(z)
+    pre_crt=[]
+    crt_list=[]
+    for i in range (0, len(factors)):
+        if(factors[i][1]==1):
+            pre_crt.append(modular_sqrt_prime(x, factors[i][0]))
+            crt_list.append(factors[i][0])                           
+        else:
+            pre_crt.append(modular_sqrt_prime_power(x, factors[i][0], factors[i][1]))
+            crt_list.append(factors[i][0]**factors[i][1])
+    print(pre_crt,crt_list)
+    op= crt(pre_crt, crt_list)
+    if op<z-op:
+        return op
+    else:
+        return z-op
+
+
+def gaussian_elimination(A, b,p):
+    n = len(A[0])
+    
+    # Forward elimination
+    for i in range(n):
+        # Pivot for maximum element in column i to avoid division by zero
+        max_row = max(range(i, n), key=lambda r: abs(A[i][r]))
+        for k in range(n):
+            A[k][i], A[k][max_row] = A[k][max_row], A[k][i]
+        b[i], b[max_row] = b[max_row], b[i]
+        
+        # Eliminate entries below i
+        for j in range(i + 1, n):
+            if A[i][j] == 0:
+                continue
+            factor = A[i][j]/A[i][i]
+            b[j] -= factor * b[i]
+            for k in range(n):
+                A[k][j] -= factor * A[k][i]
+            
+
+    # Back substitution
+    x = [0] * n
+    for i in range(n - 1, -1, -1):
+        x[i] = b[i] /A[i][i]
+        x[i]= int(x[i])%p
+        for j in range(i - 1, -1, -1):
+            b[j] -= A[i][j] * x[i]
+            b[j]%=p
+    
+
+    return x
 
 def probabilistic_discrete_log(x,g,p):
     def find_y(p):
         k=natural_log(p)
         ex= k * natural_log(k)/2
         return int(exp(ex**(0.5)))
-    def find_k(y, primes):
+    def find_k(y):
         k=0
+        primes=[]
         for i in range(2,y+1):
             if(is_prime(i)):
                 primes.append(i)
@@ -689,7 +740,7 @@ def probabilistic_discrete_log(x,g,p):
     r_list=[]
     s_list=[]
     k,primes=find_k(y)
-    for i in range (0, k+1):
+    for _ in range (0, k+1):
         flag= True
         while flag:
             r= random.randint(2,q-1)
@@ -702,7 +753,21 @@ def probabilistic_discrete_log(x,g,p):
         v.append(find_e(m, primes))
         r_list.append(r)
         s_list.append(s)
-
+    A= v[:-1]
+    b=v[-1]
+    c= gaussian_elimination(A, b,q)
+    c.append(-1)
+    r_sum=0
+    for i in range (0,k):
+        r_sum+=r_list[i]*c[i]
+        r_sum%=q
+    s_sum=0
+    for i in range (0,k):
+        s_sum+=s_list[i]*c[i]
+        s_sum%=q
+    if s_sum==0:
+        raise ValueError("No solution")
+    return (mod_inv(s_sum,p)*r_sum*(q-1))%q
         
         
 
