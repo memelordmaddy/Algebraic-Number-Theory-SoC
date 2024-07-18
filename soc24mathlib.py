@@ -95,7 +95,7 @@ def floor_sqrt(n): # returns floor(sqrt(n)) [op:int, ip:int]
         if((m+two_raised_to_i)**2<=n):
             m= m+two_raised_to_i
         two_raised_to_i /= 2
-    return m
+    return int(m)
 
 def floor_k_root(n, k): # returns floor(n^(1/k)) [op:int, ip:(int, int)]
     len_n = n.bit_length()
@@ -126,7 +126,7 @@ def natural_log(n):
     n-=1
     natural_log=0
     n_cp=n
-    for i in range(1,100):
+    for i in range(1,10):
         if i%2==0:
             natural_log-=n/i
         else:
@@ -299,6 +299,7 @@ class QuotientPolynomialRing:
             
          
 def factor(n):
+    n_cp=n
     max= int(floor_sqrt(n))
     if(n==1):
         return []
@@ -314,7 +315,7 @@ def factor(n):
     for i in range(2, max+1):
         if(prime[i]):
             if(n%i==0):
-                if(is_prime(n//i)):
+                if(is_prime(n//i) ):
                     count_2=0
                     k=n//i
                     while(n%k==0):
@@ -329,6 +330,8 @@ def factor(n):
             for j in range(i*i, max+1, i):
                 prime[j]=False
     op.sort()
+    if(len(op)>=2 and op[-2][1]==0):
+        op.pop(-2)
     return op
     
 def euler_phi(n):
@@ -500,7 +503,7 @@ def aks_test(n):
 
 def legendre_symbol(a, p):
     if(p==2):
-        raise ValueError("p should be an odd prime")
+        return 1
     if(a==-1):
         if(p%4==1):
             return 1
@@ -661,27 +664,42 @@ def modular_sqrt_prime_power(a, p, k):
         return p**k-op    
 
 def modular_sqrt(x,z):
+    def generate_combinations(lst):
+        result = [[]]
+        for a, b in lst:
+            new_result = []
+            for combination in result:
+                new_result.append(combination + [a])
+                new_result.append(combination + [b])
+            result = new_result
+        return result
+    
     factors= factor(z)
     pre_crt=[]
     crt_list=[]
     for i in range (0, len(factors)):
         if(factors[i][1]==1):
-            pre_crt.append(modular_sqrt_prime(x, factors[i][0]))
+            k= modular_sqrt_prime(x, factors[i][0])
+            pre_crt.append((k, factors[i][0]-k))
             crt_list.append(factors[i][0])                           
         else:
-            pre_crt.append(modular_sqrt_prime_power(x, factors[i][0], factors[i][1]))
+            k= modular_sqrt_prime_power(x, factors[i][0], factors[i][1])
+            pre_crt.append((k, factors[i][0]**factors[i][1]-k))
             crt_list.append(factors[i][0]**factors[i][1])
-    print(pre_crt,crt_list)
-    op= crt(pre_crt, crt_list)
-    if op<z-op:
-        return op
-    else:
-        return z-op
+    
+    combinations= generate_combinations(pre_crt)
+    possible_roots=[]
+    min_root= z
+    for i in range (0, len(combinations)):
+        possible_roots.append(crt(combinations[i], crt_list))
+        if(possible_roots[i]<min_root):
+            min_root= possible_roots[i]
 
+    return min_root     
 
 def gaussian_elimination(A, b,p):
     n = len(A[0])
-    
+
     # Forward elimination
     for i in range(n):
         # Pivot for maximum element in column i to avoid division by zero
@@ -689,34 +707,39 @@ def gaussian_elimination(A, b,p):
         for k in range(n):
             A[k][i], A[k][max_row] = A[k][max_row], A[k][i]
         b[i], b[max_row] = b[max_row], b[i]
-        
+
         # Eliminate entries below i
         for j in range(i + 1, n):
             if A[i][j] == 0:
                 continue
-            factor = A[i][j]/A[i][i]
+            factor = (A[i][j] *  mod_inv(A[i][i],p))%p
             b[j] -= factor * b[i]
+            b[j]%=p
             for k in range(n):
                 A[k][j] -= factor * A[k][i]
-            
+                A[k][j]%=p
 
     # Back substitution
     x = [0] * n
     for i in range(n - 1, -1, -1):
-        x[i] = b[i] /A[i][i]
-        x[i]= int(x[i])%p
+        x[i] = b[i] * mod_inv(A[i][i],p)
+        x[i]%=p
         for j in range(i - 1, -1, -1):
             b[j] -= A[i][j] * x[i]
             b[j]%=p
-    
+
 
     return x
 
-def probabilistic_discrete_log(x,g,p):
-    def find_y(p):
+def find_y(p):
         k=natural_log(p)
+        print(k)
         ex= k * natural_log(k)/2
+        print(ex)
         return int(exp(ex**(0.5)))
+
+def probabilistic_discrete_log(x,g,p):
+    
     def find_k(y):
         k=0
         primes=[]
@@ -735,7 +758,7 @@ def probabilistic_discrete_log(x,g,p):
             exps.append(e)
         return exps
     y= find_y(p)
-    q= order(g,p)
+    q= p-1
     v=[]
     r_list=[]
     s_list=[]
@@ -755,7 +778,7 @@ def probabilistic_discrete_log(x,g,p):
         s_list.append(s)
     A= v[:-1]
     b=v[-1]
-    c= gaussian_elimination(A, b,q)
+    c= gaussian_elimination(A, b,p)
     c.append(-1)
     r_sum=0
     for i in range (0,k):
@@ -769,11 +792,180 @@ def probabilistic_discrete_log(x,g,p):
         raise ValueError("No solution")
     return (mod_inv(s_sum,p)*r_sum*(q-1))%q
         
-        
+    
+import soc24mathlib
+
+def probabilistic_factor(N):
+    if(N<10**12):
+        return soc24mathlib.factor(N)
+    if(soc24mathlib.is_prime(N)):
+        return [(N,1)]
+    factors=[]
+    for i in range (2,1000):
+        if(soc24mathlib.is_prime(i)):
+            count=0
+            while(N%i==0):
+                count+=1
+                N//=i
+            if(count>0):
+                factors.append((i,count))
+    if(N<10**12):
+        factors.extend(soc24mathlib.factor(N))
+        return factors
+    
+    def gauss(M):
+        marks = [False] * len(M)
+        for j in range(len(M[0])):
+            for i in range(len(M)):
+                if M[i][j] == 1:
+                    marks[i] = True
+                    for k in range(j):
+                        if M[i][k] == 1:
+                            for row in range(len(M)):
+                                M[row][k] = (M[row][k] + M[row][j]) % 2
+                    for k in range(j + 1, len(M[0])):
+                        if M[i][k] == 1:
+                            for row in range(len(M)):
+                                M[row][k] = (M[row][k] + M[row][j]) % 2
+                    break
+        return (marks, M)
+
+    def get_dep_cols(row):
+        return [i for i in range(len(row)) if row[i] == 1]
+
+    def row_add(new_row, current):
+        return [current[i] ^ M[new_row][i] for i in range(len(M[new_row]))]
+
+    def is_dependent(cols, row):
+        return any(row[i] == 1 for i in cols)
+
+    def find_linear_deps(row):
+        ret = []
+        dep_cols = get_dep_cols(M[row])
+        current_rows = [row]
+        current_sum = M[row][:]
+        for i in range(len(M)):
+            if i == row:
+                continue
+            if is_dependent(dep_cols, M[i]):
+                current_rows.append(i)
+                current_sum = row_add(i, current_sum)
+                if sum(current_sum) == 0:
+                    ret.append(current_rows[:])
+        return ret
+
+    def testdep(dep):
+        x = y = 1
+        for row in dep:
+            x *= smooth_vals[row][0]
+            y *= smooth_vals[row][1]
+        return xgcd(x - soc24mathlib.floor_sqrt(y), N)[0]
+
+    def xgcd(a, b):
+        prevx, x = 1, 0
+        prevy, y = 0, 1
+        while b:
+            q, r = divmod(a, b)
+            x, prevx = prevx - q * x, x  
+            y, prevy = prevy - q * y, y
+            a, b = b, r
+        return a, prevx, prevy
+
+    def create_base(n, B):
+        base = []
+        i = 2
+        while len(base) < B:
+            if soc24mathlib.legendre_symbol(n, i) == 1:
+                base.append(i)
+            i += 1
+            while not soc24mathlib.is_prime(i):
+                i += 1
+        return base
+
+    def poly(x, a, b, n):
+        return ((a * x + b) ** 2) - n
+
+    def solve(a, b, n):
+        start_vals = []
+        for p in base:
+            ainv=soc24mathlib.mod_inv(a, p)
+            r1 = soc24mathlib.modular_sqrt_prime(n, p)
+            r2 = (-1 * r1) % p
+            start1 = (ainv * (r1 - b)) % p
+            start2 = (ainv * (r2 - b)) % p
+            start_vals.append([start1, start2])
+        return start_vals
+
+    def trial(n, base):
+        ret = [0] * len(base)
+        if n > 0:
+            for i in range(len(base)):
+                while n % base[i] == 0:
+                    n //= base[i]
+                    ret[i] = (ret[i] + 1) % 2
+        return ret
+
+    a = 1
+    b = soc24mathlib.floor_sqrt(N) + 1
+    bound = 50
+    base = create_base(N, bound)
+    needed = soc24mathlib.euler_phi(base[-1]) + 1
+
+    sieve_start = 0
+    sieve_stop = 0
+    sieve_interval = 100000
+
+    M = []
+    smooth_vals = []
+    start_vals = solve(a, b, N)
+    seen = set([])
+
+    while len(smooth_vals) < needed:
+        sieve_start = sieve_stop
+        sieve_stop += sieve_interval
+        interval = [poly(x, a, b, N) for x in range(sieve_start, sieve_stop)]
+
+        for p in range(len(base)):
+            t = start_vals[p][0]
+            while start_vals[p][0] < sieve_start + sieve_interval:
+                while interval[start_vals[p][0] - sieve_start] % base[p] == 0:
+                    interval[start_vals[p][0] - sieve_start] //= base[p]
+                start_vals[p][0] += base[p]
+            if start_vals[p][1] != t:
+                while start_vals[p][1] < sieve_start + sieve_interval:
+                    while interval[start_vals[p][1] - sieve_start] % base[p] == 0:
+                        interval[start_vals[p][1] - sieve_start] //= base[p]
+                    start_vals[p][1] += base[p]
+        for i in range(sieve_interval):
+            if interval[i] == 1:
+                x = sieve_start + i
+                y = poly(x, a, b, N)
+                exp = trial(y, base)
+                if not tuple(exp) in seen:
+                    smooth_vals.append(((a * x) + b, y))
+                    M.append(exp)
+                    seen |= set([tuple(exp)])
+
+    marks, M = gauss(M)
+    
+
+    for i in range(len(marks)):
+        if not marks[i]:
+            deps = find_linear_deps(i)
+            for dep in deps:
+                gcd = testdep(dep)
+                if gcd != 1 and gcd != N:
+                    print(gcd, N // gcd )
+                    if gcd < 10**12:
+                        factors.extend(soc24mathlib.factor(gcd))
+                    else:
+                        factors.extend(probabilistic_factor(gcd))
+                    if (N // gcd) < 10**12:
+                        factors.extend(soc24mathlib.factor(N // gcd))
+                    else:
+                        factors.extend(probabilistic_factor(N // gcd))
+                    return factors
 
 
-
-def probabilistic_factor(n):
-    pass
 
 
