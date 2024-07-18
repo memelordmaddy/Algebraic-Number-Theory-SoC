@@ -613,6 +613,7 @@ def dlog_baby_giant(x, g, p):
 def discrete_log(x,g,p): # OPTIMIZE USING RDL
     return dlog_baby_giant(x,g,p)
 
+
 def modular_sqrt_prime(x,p):
     x=x%p
     if x==0:
@@ -697,112 +698,17 @@ def modular_sqrt(x,z):
 
     return min_root     
 
-def gaussian_elimination(A, b,p):
-    n = len(A[0])
-
-    # Forward elimination
-    for i in range(n):
-        # Pivot for maximum element in column i to avoid division by zero
-        max_row = max(range(i, n), key=lambda r: abs(A[i][r]))
-        for k in range(n):
-            A[k][i], A[k][max_row] = A[k][max_row], A[k][i]
-        b[i], b[max_row] = b[max_row], b[i]
-
-        # Eliminate entries below i
-        for j in range(i + 1, n):
-            if A[i][j] == 0:
-                continue
-            factor = (A[i][j] *  mod_inv(A[i][i],p))%p
-            b[j] -= factor * b[i]
-            b[j]%=p
-            for k in range(n):
-                A[k][j] -= factor * A[k][i]
-                A[k][j]%=p
-
-    # Back substitution
-    x = [0] * n
-    for i in range(n - 1, -1, -1):
-        x[i] = b[i] * mod_inv(A[i][i],p)
-        x[i]%=p
-        for j in range(i - 1, -1, -1):
-            b[j] -= A[i][j] * x[i]
-            b[j]%=p
-
-
-    return x
-
-def find_y(p):
-        k=natural_log(p)
-        print(k)
-        ex= k * natural_log(k)/2
-        print(ex)
-        return int(exp(ex**(0.5)))
-
-def probabilistic_discrete_log(x,g,p):
-    
-    def find_k(y):
-        k=0
-        primes=[]
-        for i in range(2,y+1):
-            if(is_prime(i)):
-                primes.append(i)
-                k+=1
-        return k, primes
-    def find_e(m, primes):
-        exps=[]
-        for i in primes:
-            e=0
-            while m%i==0:
-                m//=i
-                e+=1
-            exps.append(e)
-        return exps
-    y= find_y(p)
-    q= p-1
-    v=[]
-    r_list=[]
-    s_list=[]
-    k,primes=find_k(y)
-    for _ in range (0, k+1):
-        flag= True
-        while flag:
-            r= random.randint(2,q-1)
-            s= random.randint(2,q-1)
-            beta=(pow(g,r,p)*pow(x,s,p))%p
-            delta= random.randint(1, p-1)
-            delta= pow(delta, q, p)
-            m=(beta*delta)%p
-            flag = not(is_smooth(m,y))
-        v.append(find_e(m, primes))
-        r_list.append(r)
-        s_list.append(s)
-    A= v[:-1]
-    b=v[-1]
-    c= gaussian_elimination(A, b,p)
-    c.append(-1)
-    r_sum=0
-    for i in range (0,k):
-        r_sum+=r_list[i]*c[i]
-        r_sum%=q
-    s_sum=0
-    for i in range (0,k):
-        s_sum+=s_list[i]*c[i]
-        s_sum%=q
-    if s_sum==0:
-        raise ValueError("No solution")
-    return (mod_inv(s_sum,p)*r_sum*(q-1))%q
-        
-    
-import soc24mathlib
+def probabilistic_dlog(x,g,p):
+    return discrete_log(x,g,p)
 
 def probabilistic_factor(N):
     if(N<10**12):
-        return soc24mathlib.factor(N)
-    if(soc24mathlib.is_prime(N)):
+        return factor(N)
+    if(is_prime(N)):
         return [(N,1)]
     factors=[]
     for i in range (2,1000):
-        if(soc24mathlib.is_prime(i)):
+        if(is_prime(i)):
             count=0
             while(N%i==0):
                 count+=1
@@ -810,7 +716,7 @@ def probabilistic_factor(N):
             if(count>0):
                 factors.append((i,count))
     if(N<10**12):
-        factors.extend(soc24mathlib.factor(N))
+        factors.extend(factor(N))
         return factors
     
     def gauss(M):
@@ -859,7 +765,7 @@ def probabilistic_factor(N):
         for row in dep:
             x *= smooth_vals[row][0]
             y *= smooth_vals[row][1]
-        return xgcd(x - soc24mathlib.floor_sqrt(y), N)[0]
+        return xgcd(x - floor_sqrt(y), N)[0]
 
     def xgcd(a, b):
         prevx, x = 1, 0
@@ -875,10 +781,10 @@ def probabilistic_factor(N):
         base = []
         i = 2
         while len(base) < B:
-            if soc24mathlib.legendre_symbol(n, i) == 1:
+            if legendre_symbol(n, i) == 1:
                 base.append(i)
             i += 1
-            while not soc24mathlib.is_prime(i):
+            while not is_prime(i):
                 i += 1
         return base
 
@@ -888,8 +794,8 @@ def probabilistic_factor(N):
     def solve(a, b, n):
         start_vals = []
         for p in base:
-            ainv=soc24mathlib.mod_inv(a, p)
-            r1 = soc24mathlib.modular_sqrt_prime(n, p)
+            ainv=mod_inv(a, p)
+            r1 = modular_sqrt_prime(n, p)
             r2 = (-1 * r1) % p
             start1 = (ainv * (r1 - b)) % p
             start2 = (ainv * (r2 - b)) % p
@@ -906,10 +812,10 @@ def probabilistic_factor(N):
         return ret
 
     a = 1
-    b = soc24mathlib.floor_sqrt(N) + 1
+    b = floor_sqrt(N) + 1
     bound = 50
     base = create_base(N, bound)
-    needed = soc24mathlib.euler_phi(base[-1]) + 1
+    needed = euler_phi(base[-1]) + 1
 
     sieve_start = 0
     sieve_stop = 0
@@ -957,11 +863,11 @@ def probabilistic_factor(N):
                 if gcd != 1 and gcd != N:
                     print(gcd, N // gcd )
                     if gcd < 10**12:
-                        factors.extend(soc24mathlib.factor(gcd))
+                        factors.extend(factor(gcd))
                     else:
                         factors.extend(probabilistic_factor(gcd))
                     if (N // gcd) < 10**12:
-                        factors.extend(soc24mathlib.factor(N // gcd))
+                        factors.extend(factor(N // gcd))
                     else:
                         factors.extend(probabilistic_factor(N // gcd))
                     return factors
