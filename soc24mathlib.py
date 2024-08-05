@@ -25,7 +25,7 @@ def pair_egcd(a: int, b: int) -> Tuple[int, int, int]:
         b (int): The second integer.
 
     Returns:
-        Tuple[int, int, int]: A tuple (x, y, gcd) where gcd is gcd(a, b) and ax + by = gcd.
+        Tuple[int, int, int]: A tuple (gcd, x, y) where gcd is gcd(a, b) and ax + by = gcd.
     """
     if b == 0:
         return 1, 0, a
@@ -164,7 +164,8 @@ def pow(a: int, m: int, n: int) -> int:
 
 def is_quadratic_residue_prime(a: int, p: int) -> int:
     """
-    Check if a is a quadratic residue modulo a prime p.
+    Check if a is a quadratic residue modulo a prime p. 
+    a is a quadratic residue modulo p if there exists an integer x such that x^2 = a (mod p).
 
     Args:
         a (int): The integer to check.
@@ -200,7 +201,7 @@ def is_quadratic_residue_prime_power(a: int, p: int, e: int) -> int:
 
 def floor_sqrt(n: int) -> int:
     """
-    Computes the floor of the square root of a given integer.
+    Computes the floor (floor(x) is defined as the greatest integer less than or equal to x) of the square root of a given integer.
 
     Args:
         n (int): The integer value for which to compute the square root.
@@ -241,6 +242,7 @@ def floor_k_root(n: int, k: int) -> int:
 def is_perfect_power(n: int) -> bool:
     """
     Determines if a given integer is a perfect power.
+    An integer n is a perfect power if there exist integers a,b (b>1) such that n = a^b 
 
     Args:
         n (int): The integer value to check.
@@ -535,7 +537,7 @@ def factor(n: int) -> List[Tuple[int, int]]:
         n (int): The number to be factored.
 
     Returns:
-        List[Tuple[int, int]]: A list of tuples where each tuple contains a prime factor and its exponent.
+        List[Tuple[int, int]]: A list of tuples where each tuple contains a prime factor and its exponent, sorted in ascending order of prime numbers.
     """
     max_sqrt = int(floor_sqrt(n))
     if n == 1:
@@ -582,6 +584,7 @@ def factor(n: int) -> List[Tuple[int, int]]:
 def euler_phi(n: int) -> int:
     """
     Computes Euler's totient function for a given number.
+    Euler's Totient function counts the number of positive integers less than n that are coprime to n.
 
     Args:
         n (int): The number to compute the totient function for.
@@ -757,7 +760,7 @@ class QPR_Modulo_P:
             m (int): The exponent.
 
         Returns:
-            QPR_Modulo_P: The result of raising the polynomial to the power m.
+            QPR_Modulo_P: The result of raising the polynomial to the power m, using the square-and-multiply algorithm.
         """
         if m == 0:
             return QPR_Modulo_P([1], poly.pi_generator, poly.p)
@@ -852,6 +855,7 @@ def aks_test(n: int) -> bool:
 def legendre_symbol(a: int, p: int) -> int:
     """
     Compute the Legendre symbol (a/p).
+    Legendre symbol is defined as 1 if a is a quadratic residue modulo p, -1 if it is a non-residue, and 0 if a is divisible by p.
 
     Args:
         a (int): The numerator of the Legendre symbol.
@@ -877,6 +881,7 @@ def legendre_symbol(a: int, p: int) -> int:
 def jacobi_symbol(a: int, n: int) -> int:
     """
     Compute the Jacobi symbol (a/n).
+    Jacobi symbol is a generalization of the Legendre symbol to all odd integers n.
 
     Args:
         a (int): The numerator of the Jacobi symbol.
@@ -907,6 +912,7 @@ def jacobi_symbol(a: int, n: int) -> int:
 def get_generator(p: int) -> int:
     """
     Find a generator of the multiplicative group of integers modulo p.
+    A generator is an element g such that every element of the group can be expressed as a power of g.
 
     Args:
         p (int): A prime number.
@@ -927,6 +933,7 @@ def get_generator(p: int) -> int:
 def order(a: int, n: int) -> int:
     """
     Find the order of an element a in the multiplicative group modulo n.
+    Order of an element is the smallest positive integer k such that a^k = 1 (mod n).
 
     Args:
         a (int): The element whose order is to be found.
@@ -949,6 +956,7 @@ def order(a: int, n: int) -> int:
 def is_smooth(m: int, y: int) -> bool:
     """
     Check if a number m is y-smooth.
+    A number is y-smooth if all its prime factors are less than or equal to y.
 
     Args:
         m (int): The number to be checked.
@@ -969,6 +977,7 @@ def is_smooth(m: int, y: int) -> bool:
 def dlog_brute_force(x: int, g: int, p: int) -> int:
     """
     Compute discrete logarithm using brute-force method.
+    Discrete logarithm is the inverse operation of exponentiation, where given x = g^k (mod p), we find k.
 
     Args:
         x (int): The target value.
@@ -1024,6 +1033,7 @@ def discrete_log(x: int, g: int, p: int) -> int:
 def modular_sqrt_prime(x: int, p: int) -> int:
     """
     Compute modular square root of x modulo a prime p.
+    Modular square root is a number r such that r^2 = x (mod p). In case of multiple square roots, we return the smallest.
 
     Args:
         x (int): The number whose square root is to be computed.
@@ -1546,5 +1556,4 @@ def probabilistic_factor(N: int) -> List[Tuple[int, int]]:
                     return factor_list
 
     raise ValueError("Factorization failed or no factors found.")
-
 
